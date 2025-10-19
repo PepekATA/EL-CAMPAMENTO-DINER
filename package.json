@@ -1,0 +1,17 @@
+{
+  "name": "alpaca-trading-bot",
+  "version": "1.0.0",
+  "description": "Bot de trading automatizado con Alpaca y ML",
+  "main": "api/trade.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@alpacahq/alpaca-trade-api": "^3.0.0",
+    "axios": "^1.6.0",
+    "googleapis": "^128.0.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1"
+  }
+}
