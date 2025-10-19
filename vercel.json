@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "env": {
+    "ALPACA_API_KEY": "@alpaca_api_key",
+    "ALPACA_SECRET_KEY": "@alpaca_secret_key",
+    "ALPACA_BASE_URL": "https://paper-api.alpaca.markets",
+    "GOOGLE_DRIVE_CREDENTIALS": "@google_drive_credentials",
+    "GOOGLE_DRIVE_FOLDER_ID": "@drive_folder_id"
+  },
+  "crons": [
+    {
+      "path": "/api/trade",
+      "schedule": "*/5 * * * *"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 300
+    }
+  }
+}
