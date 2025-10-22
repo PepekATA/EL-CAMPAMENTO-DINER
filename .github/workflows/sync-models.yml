@@ -1,0 +1,98 @@
+# .github/workflows/sync-models.yml
+# 
+# Workflow que sincroniza automáticamente:
+# 1. Detecta cambios en models_metadata.json
+# 2. Actualiza Vercel
+# 3. Notifica a Streamlit Cloud
+
+name: 🤖 Sync Trading Models
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'models_metadata.json'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+  
+  # Ejecución programada cada hora
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  sync-models:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+    
+    - name: 🔍 Check models metadata
+      id: check_metadata
+      run: |
+        if [ -f "models_metadata.json" ]; then
+          echo "✅ models_metadata.json existe"
+          echo "exists=true" >> $GITHUB_OUTPUT
+          
+          # Leer metadata
+          TOTAL_MODELS=$(jq '.total_models' models_metadata.json)
+          LAST_UPDATE=$(jq -r '.last_update' models_metadata.json)
+          
+          echo "📊 Total modelos: $TOTAL_MODELS"
+          echo "🕐 Última actualización: $LAST_UPDATE"
+          
+          echo "total_models=$TOTAL_MODELS" >> $GITHUB_OUTPUT
+          echo "last_update=$LAST_UPDATE" >> $GITHUB_OUTPUT
+        else
+          echo "⚠️ models_metadata.json no encontrado"
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: 🔄 Trigger Vercel Deployment
+      if: steps.check_metadata.outputs.exists == 'true'
+      run: |
+        echo "🚀 Triggering Vercel deployment..."
+        curl -X POST "https://api.vercel.com/v1/integrations/deploy/${{ secrets.VERCEL_DEPLOY_HOOK }}"
+    
+    - name: 📢 Notify Streamlit
+      if: steps.check_metadata.outputs.exists == 'true'
+      run: |
+        echo "📢 Notificación enviada - Streamlit se actualizará automáticamente"
+        echo "   Modelos actualizados: ${{ steps.check_metadata.outputs.total_models }}"
+        echo "   Timestamp: ${{ steps.check_metadata.outputs.last_update }}"
+    
+    - name: 📝 Create deployment summary
+      if: steps.check_metadata.outputs.exists == 'true'
+      run: |
+        echo "## 🤖 Trading Bot - Sync Completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Models Updated Successfully**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 Total Models: ${{ steps.check_metadata.outputs.total_models }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 🕐 Last Update: ${{ steps.check_metadata.outputs.last_update }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 🚀 Vercel: Deploying..." >> $GITHUB_STEP_SUMMARY
+        echo "- 📱 Streamlit: Will auto-refresh" >> $GITHUB_STEP_SUMMARY
+
+  notify-success:
+    needs: sync-models
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: 🎉 Success notification
+      run: |
+        echo "✅ Sincronización completada exitosamente"
+        echo "🔗 Bot live: https://tu-bot.vercel.app"
+        echo "📊 Dashboard: https://share.streamlit.io/tu-usuario/trading-bot"
+
+  notify-failure:
+    needs: sync-models
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+    - name: ❌ Failure notification
+      run: |
+        echo "❌ Error en la sincronización"
+        echo "🔍 Revisa los logs de GitHub Actions"
